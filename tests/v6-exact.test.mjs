@@ -6,6 +6,7 @@ const index=fs.readFileSync('index.html','utf8');
 const css=fs.readFileSync('src/styles/v6.css','utf8');
 const ipad=fs.readFileSync('src/styles/v6-exact-ipad.css','utf8');
 const app=fs.readFileSync('src/app-v6.js','utf8');
+const enhance=fs.readFileSync('src/enhance-v6.js','utf8');
 
 test('v6 entry point is active',()=>{
   assert.match(index,/src\/app-v6\.js/);
@@ -45,4 +46,10 @@ test('Polymarket card families are independently rendered',()=>{
   assert.match(app,/Breaking News/);
   assert.match(app,/Hot topics/);
   assert.match(app,/Build a combo/);
+});
+
+test('enhancement layer cannot recursively observe its own DOM writes',()=>{
+  assert.doesNotMatch(enhance,/MutationObserver/);
+  assert.match(enhance,/document\.addEventListener\('click'/);
+  assert.match(enhance,/window\.addEventListener\('hashchange'/);
 });
