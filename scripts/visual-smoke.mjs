@@ -8,7 +8,7 @@ const browser=await chromium.launch({headless:true});
 const errors=[];
 
 async function context(viewport){
-  const ctx=await browser.newContext({viewportSize:viewport});
+  const ctx=await browser.newContext({viewport});
   const page=await ctx.newPage();
   page.on('console',msg=>{if(msg.type()==='error')errors.push(`console: ${msg.text()}`)});
   page.on('pageerror',err=>errors.push(`pageerror: ${err.message}`));
