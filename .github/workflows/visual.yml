@@ -28,10 +28,12 @@ jobs:
           exit 1
       - run: node scripts/visual-smoke.mjs
       - name: Upload screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: holymarket-v9-visuals
           path: visual-artifacts/
+          if-no-files-found: ignore
           retention-days: 7
       - name: Print server log on failure
         if: failure()
