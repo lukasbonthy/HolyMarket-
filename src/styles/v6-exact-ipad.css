@@ -1,0 +1,13 @@
+/* Exact 1024px iPad geometry measured from the supplied 2048x1536 DPR2 Polymarket captures. */
+@media (min-width:900px) and (max-width:1100px){
+  .topbar{position:relative;padding:0;display:block}
+  .brand{position:absolute;left:30px;top:0;width:145px}
+  .global-search{position:absolute;left:190px;top:11px;width:542px}
+  .primary-cta{position:absolute;left:747px;top:11px;width:180px;min-width:180px}
+  .round-icon{position:absolute;top:14px}
+  .round-icon:not(.menu-icon){left:940px}
+  .menu-icon{left:978px}
+  .top-nav-scroll{padding-left:30px;padding-right:22px}
+  .scoreboard{padding-left:149px}
+  .score-header,.score-line{grid-template-columns:30px 105px 55px 55px 55px 62px}
+}
