@@ -2,7 +2,7 @@ name: HolyMarket tests
 
 on:
   push:
-    branches: [main, feature/express-session-auth]
+    branches: [main, feature/express-session-auth, feature/anti-cheat-polymarket-v9]
   pull_request:
     branches: [main]
 
@@ -18,4 +18,4 @@ jobs:
       - run: npm install
       - run: npm test
       - run: npm run build
-      - run: node --check server.mjs && node --check server/app.mjs && node --check src/app.js
+      - run: node --check server.mjs && node --check server/app.mjs && if [ -f server/anti-cheat.mjs ]; then node --check server/anti-cheat.mjs; fi && if [ -f src/app-v9.js ]; then node --check src/app-v9.js; else node --check src/app.js; fi
