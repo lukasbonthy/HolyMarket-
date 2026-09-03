@@ -2,6 +2,7 @@ const appRoot=document.querySelector('#app');
 let menuCloseTimer=null;
 let filtersOpen=false;
 let bookmarksOnly=false;
+let activeNavTopic='';
 const clientFilters={matchups:false,live:false,resolved:false};
 
 function controlToast(message){
@@ -83,6 +84,10 @@ function hydrateControls(){
   const help=document.querySelector('button[aria-label="Help"]');
   if(help)help.dataset.action='help';
 
+  document.querySelectorAll('[data-nav-topic]').forEach(link=>{
+    if(activeNavTopic)link.classList.toggle('active',link.dataset.navTopic===activeNavTopic);
+  });
+
   const titleButtons=document.querySelectorAll('.markets-title>div>button');
   if(titleButtons[1]){titleButtons[1].dataset.action='toggle-filters';titleButtons[1].setAttribute('aria-label','Filters')}
   if(titleButtons[2]){titleButtons[2].dataset.action='bookmarks-only';titleButtons[2].setAttribute('aria-label','Bookmarked markets')}
@@ -97,12 +102,27 @@ function hydrateControls(){
   applyClientFilters();
 }
 
+function dispatchMarketSearch(value){
+  const input=document.querySelector('#market-search');
+  if(!input)return false;
+  input.value=value;
+  input.dispatchEvent(new Event('input',{bubbles:true}));
+  return true;
+}
+
 function activateHeaderTopic(topic){
-  const direct=document.querySelector(`[data-action="topic"][data-topic="${CSS.escape(topic)}"]`);
-  if(direct){direct.click();return}
-  const aliases={Trending:'All',Combos:'All',Breaking:'All',New:'All',Letters:'Acts'};
-  const target=aliases[topic]||topic;
-  document.querySelector(`[data-action="topic"][data-topic="${CSS.escape(target)}"]`)?.click();
+  activeNavTopic=topic;
+  const broad={Trending:'All',Combos:'All',Breaking:'All',New:'All'};
+  const directTopic=broad[topic]||topic;
+  const direct=document.querySelector(`[data-action="topic"][data-topic="${CSS.escape(directTopic)}"]`);
+  if(direct){
+    dispatchMarketSearch('');
+    queueMicrotask(()=>document.querySelector(`[data-action="topic"][data-topic="${CSS.escape(directTopic)}"]`)?.click());
+    return;
+  }
+  // Categories like History/Torah/Prophets/Revelation are real market metadata
+  // even when they are not duplicated in the secondary topic pill rail.
+  dispatchMarketSearch(topic==='Letters'?'Paul':topic);
 }
 
 if(appRoot){
@@ -135,6 +155,7 @@ document.addEventListener('click',async e=>{
   if(nav){
     e.preventDefault();
     const topic=nav.dataset.navTopic||'All';
+    activeNavTopic=topic;
     if(location.hash!=='#/markets')location.hash='#/markets';
     setTimeout(()=>{hydrateControls();activateHeaderTopic(topic)},0);
     return;
