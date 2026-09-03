@@ -1,7 +1,7 @@
 # HolyMarket Express Session Auth — Design
 
 Date: 2026-09-03
-Status: Proposed for implementation
+Status: Approved for implementation
 
 ## Goal
 
@@ -12,6 +12,7 @@ Add a real prototype account system to HolyMarket without introducing Supabase o
 This phase adds:
 
 - Register with username, email, and password.
+- Mandatory Bible-truth oath during registration.
 - Log in with email + password.
 - Log out.
 - Session restoration on refresh through a server-side session cookie.
@@ -80,6 +81,12 @@ Each user record:
   "avatar": "L",
   "talents": 2450,
   "createdAt": "ISO timestamp",
+  "oath": {
+    "version": "2026-09-03-v1",
+    "accepted": true,
+    "signedName": "Luke",
+    "acceptedAt": "ISO timestamp"
+  },
   "bookmarks": [],
   "predictions": [],
   "comments": [],
@@ -91,6 +98,26 @@ Passwords are never stored in plaintext. `bcryptjs` hashes passwords before writ
 
 The JSON datastore is wrapped in a small repository module so it can later be swapped for Postgres without changing the HTTP API or frontend.
 
+## Bible-truth oath
+
+Registration requires a solemn anti-cheating oath before the account can be created.
+
+The displayed oath text is:
+
+> With my hand on a Bible if I have one, I solemnly affirm before God that the answers I choose on HolyMarket will come from my own honest knowledge and reasoning. I will not look up the resolving verse, use answer keys, search engines, AI, or another person to discover an answer before locking my prediction. I understand HolyMarket is for learning Scripture in truth, not for pretending to know what I do not know.
+
+The registration form requires all of the following:
+
+- A checked `I agree to this oath` checkbox.
+- The user types their name into a `Signed name` field.
+- The server receives `oathAccepted: true` and the signed name.
+- The server rejects registration if the oath is missing, unchecked, or the signed name is shorter than 2 characters.
+- The server stores the oath version, signed name, and acceptance timestamp with the account.
+
+The interface may invite the person to physically place a hand on a Bible while reading the oath, but HolyMarket must not claim it can verify that physical action.
+
+A compact reminder appears in the prediction ticket for signed-in users: `On my oath: this is my honest prediction.` The account oath is the binding attestation for this prototype; users do not need to re-sign the full oath on every prediction.
+
 ## API
 
 ### Public
@@ -100,10 +127,16 @@ The JSON datastore is wrapped in a small repository module so it can later be sw
 Body:
 
 ```json
-{"username":"Luke","email":"user@example.com","password":"..."}
+{
+  "username":"Luke",
+  "email":"user@example.com",
+  "password":"...",
+  "oathAccepted":true,
+  "oathSignedName":"Luke"
+}
 ```
 
-Creates a user, starts a session, returns the public user object.
+Creates a user, records the oath, starts a session, returns the public user object.
 
 `POST /api/auth/login`
 
@@ -149,6 +182,7 @@ All protected endpoints return HTTP 401 when no valid session exists.
 - Reject duplicate emails.
 - Username length: 2–24 characters.
 - Password minimum: 8 characters.
+- Oath must be accepted and signed during registration.
 - Reject malformed JSON with a 400 response.
 - Use generic login failure messaging so the API does not reveal whether an email exists.
 - Regenerate session IDs after successful login/register.
@@ -177,6 +211,8 @@ The modal visually follows the Polymarket-style account dialog:
 - Login / Sign up state.
 - Email and password inputs.
 - Username input only for registration.
+- Mandatory Bible-truth oath card only for registration.
+- Oath agreement checkbox and signed-name field.
 - Primary blue submit button.
 - Inline validation/error text.
 - Escape/backdrop close.
@@ -195,7 +231,7 @@ The frontend calls `/api/auth/me` at startup before rendering account-dependent 
 
 ### Predictions
 
-When logged in, `Lock prediction` sends the prediction to the server and the returned server balance becomes authoritative.
+When logged in, `Lock prediction` sends the prediction to the server and the returned server balance becomes authoritative. The ticket shows `On my oath: this is my honest prediction.`
 
 When logged out, pressing the prediction action opens the login modal instead of storing a fake prediction locally.
 
@@ -239,6 +275,8 @@ This is accepted for this prototype phase. The API and datastore boundary are in
 ### Server tests
 
 - Register creates a user and session.
+- Registration rejects a missing oath.
+- Registration stores oath version, signed name, and timestamp.
 - Duplicate registration rejected.
 - Password hash differs from plaintext password.
 - Login rejects wrong password.
@@ -255,10 +293,12 @@ This is accepted for this prototype phase. The API and datastore boundary are in
 
 At 1024×648 and mobile width:
 
-- Guest header shows Login / Sign up.
+- Guest header shows Log in / Sign up.
 - Sign up modal opens/closes.
+- Registration requires the oath checkbox and signed name.
 - Registration transitions header to authenticated state.
 - Refresh restores the session while process is alive.
+- Prediction ticket shows oath reminder.
 - Prediction locks and balance changes.
 - Bookmark toggles.
 - Comment posts.
