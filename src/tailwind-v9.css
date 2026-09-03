@@ -4,6 +4,7 @@
 
 @source "./app-v9.js";
 @source "./desktop-controls-v9.js";
+@source "./premium-v9.js";
 @source "./app-v9-entry.js";
 @source "../index.html";
 
