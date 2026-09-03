@@ -1,0 +1,22 @@
+name: HolyMarket tests
+
+on:
+  push:
+    branches: [main, feature/express-session-auth]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm install
+      - run: npm test
+      - run: npm run build
+      - run: node --check server.mjs && node --check server/app.mjs && node --check src/app.js
