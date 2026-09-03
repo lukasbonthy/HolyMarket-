@@ -59,10 +59,10 @@ await desktopTicket.locator('[data-action="quick-add"][data-value="5"]').click()
 await desktopTicket.locator('[data-action="lock-prediction"]').click();
 await ipad.page.waitForTimeout(300);
 await ipad.page.locator('[data-action="bookmark"][data-market="david-goliath"]').first().click();
-await ipad.page.locator('[data-action="discussion"][data-tab="comments"]').click();
+await ipad.page.locator('[data-action="discussion"][data-tab="comments"]').first().click();
 await ipad.page.locator('#comment-input').fill('Honest visual smoke test.');
 await ipad.page.locator('[data-action="post-comment"]').click();
-await ipad.page.locator('[data-action="discussion"][data-tab="scripture"]').click();
+await ipad.page.locator('.discussion-tabs [data-action="discussion"][data-tab="scripture"]').click();
 await ipad.page.waitForTimeout(600);
 await ipad.page.screenshot({path:`${out}/event-ipad-after.png`,fullPage:true});
 
@@ -76,6 +76,45 @@ await ipad.ctx.close();
 const desktop=await context({width:1440,height:900});
 await desktop.page.goto(`${base}/#/`,{waitUntil:'networkidle'});
 await desktop.page.screenshot({path:`${out}/home-desktop.png`,fullPage:true});
+const desktopShell=await desktop.page.locator('.topbar').boundingBox();
+if((desktopShell?.width||0)<1320)throw new Error(`desktop shell too narrow ${desktopShell?.width}`);
+const menuButton=desktop.page.locator('[data-action="site-menu"]');
+if(await menuButton.count()!==1)throw new Error('desktop site menu action missing');
+if(await menuButton.locator('svg path').count()!==2)throw new Error('site menu icon must contain exactly two lines');
+await menuButton.hover();
+await desktop.page.waitForSelector('.site-menu-popover',{state:'visible'});
+const menuText=await desktop.page.locator('.site-menu-popover').innerText();
+for(const expected of ['Markets','Leaderboard','Rewards','Help'])if(!menuText.includes(expected))throw new Error(`menu missing ${expected}`);
+await desktop.page.locator('.site-menu-popover').hover();
+if(!await desktop.page.locator('.site-menu-popover').isVisible())throw new Error('menu should stay open while hovered');
+await desktop.page.locator('[data-action="help"]').click();
+if(!await desktop.page.locator('.toast').isVisible())throw new Error('help button did not respond');
+
+await desktop.page.goto(`${base}/#/markets`,{waitUntil:'networkidle'});
+const desktopCards=desktop.page.locator('.market-card');
+const d1=await desktopCards.nth(0).boundingBox();
+const d2=await desktopCards.nth(1).boundingBox();
+const d3=await desktopCards.nth(2).boundingBox();
+const d4=await desktopCards.nth(3).boundingBox();
+if(!d1||!d2||!d3||!d4)throw new Error('desktop first market row missing');
+if(!(d1.y===d2.y&&d2.y===d3.y&&d3.y===d4.y))throw new Error('desktop markets should render four columns');
+if(d1.width<300||d1.width>330)throw new Error(`desktop card width ${d1.width}`);
+await desktop.page.locator('[data-nav-topic="History"]').click();
+await desktop.page.waitForURL(/#\/markets/);
+if(!await desktop.page.locator('[data-action="topic"][data-topic="History"].active').count())throw new Error('header category did not activate market filter');
+await desktop.page.locator('[data-action="toggle-filters"]').click();
+if(!await desktop.page.locator('.filters-popover').isVisible())throw new Error('filter button did not open filters');
+await desktop.page.locator('[data-action="bookmarks-only"]').click();
+if(!await desktop.page.locator('[data-action="bookmarks-only"].active').count())throw new Error('bookmark-only toggle did not activate');
+
+await desktop.page.goto(`${base}/#/event/david-goliath`,{waitUntil:'networkidle'});
+await desktop.page.locator('[data-action="event-info"]').click();
+if(!await desktop.page.locator('.toast').isVisible())throw new Error('event info button did not respond');
+await desktop.page.locator('[data-action="share-market"]').first().click();
+if(!await desktop.page.locator('.toast').isVisible())throw new Error('share button did not respond');
+await desktop.page.locator('[data-action="rewards-info"]').first().click();
+if(!await desktop.page.locator('.toast').isVisible())throw new Error('rewards button did not respond');
+await desktop.page.screenshot({path:`${out}/event-desktop.png`,fullPage:true});
 await desktop.ctx.close();
 
 const mobile=await context({width:390,height:844});
