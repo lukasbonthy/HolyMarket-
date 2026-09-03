@@ -100,6 +100,8 @@ const d4=await desktopCards.nth(3).boundingBox();
 if(!d1||!d2||!d3||!d4)throw new Error('desktop first market row missing');
 if(!(d1.y===d2.y&&d2.y===d3.y&&d3.y===d4.y))throw new Error('desktop markets should render four columns');
 if(d1.width<300||d1.width>330)throw new Error(`desktop card width ${d1.width}`);
+await desktop.page.locator('[data-action="rewards-info"]').first().click();
+if(!await desktop.page.locator('.toast').isVisible())throw new Error('rewards button did not respond');
 const unfilteredCount=await desktopCards.count();
 await desktop.page.locator('[data-nav-topic="History"]').click();
 await desktop.page.waitForURL(/#\/markets/);
@@ -117,8 +119,6 @@ await desktop.page.locator('[data-action="event-info"]').click();
 if(!await desktop.page.locator('.toast').isVisible())throw new Error('event info button did not respond');
 await desktop.page.locator('[data-action="share-market"]').first().click();
 if(!await desktop.page.locator('.toast').isVisible())throw new Error('share button did not respond');
-await desktop.page.locator('[data-action="rewards-info"]').first().click();
-if(!await desktop.page.locator('.toast').isVisible())throw new Error('rewards button did not respond');
 await desktop.page.screenshot({path:`${out}/event-desktop.png`,fullPage:true});
 await desktop.ctx.close();
 
