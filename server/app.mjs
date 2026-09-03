@@ -209,7 +209,13 @@ export function createApp({
         const r=await fetchImpl(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`);
         if(r.ok){const d=await r.json();return res.json({provider:'web',reference:d.reference||ref,content:d.text||'',version_title:'World English Bible',attribution:'World English Bible — public domain'});}
       }catch{}
-      jsonError(res,502,'Scripture provider unavailable');
+      return res.json({
+        provider:'local-fallback',
+        reference:ref,
+        content:'The Scripture provider is temporarily unavailable. Your prediction is still locked safely; use the cited reference to verify the passage when the provider returns.',
+        version_title:'Scripture reference',
+        attribution:'HolyMarket local fallback — no verse text cached'
+      });
     }catch(err){next(err)}
   });
 
