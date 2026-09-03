@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { hashPassword } from './passwords.mjs';
+import { createIntegrityState, normalizeIntegrity } from './anti-cheat.mjs';
 
 export const OATH_VERSION='2026-09-03-v1';
 
@@ -12,13 +13,22 @@ export class UserRepository {
     this.loaded=false;
     this.users=[];
   }
+  #normalizeUser(user){
+    if(!user||typeof user!=='object')return user;
+    user.bookmarks=Array.isArray(user.bookmarks)?user.bookmarks:[];
+    user.predictions=Array.isArray(user.predictions)?user.predictions:[];
+    user.comments=Array.isArray(user.comments)?user.comments:[];
+    user.activity=Array.isArray(user.activity)?user.activity:[];
+    user.integrity=normalizeIntegrity(user.integrity||createIntegrityState());
+    return user;
+  }
   async #ensure(){
     if(this.loaded)return;
     await fs.mkdir(this.dataDir,{recursive:true});
     try{
       const raw=await fs.readFile(this.file,'utf8');
       const data=JSON.parse(raw);
-      this.users=Array.isArray(data)?data:[];
+      this.users=(Array.isArray(data)?data:[]).map(user=>this.#normalizeUser(user));
     }catch(err){
       if(err.code!=='ENOENT') throw err;
       this.users=[];
@@ -34,6 +44,7 @@ export class UserRepository {
   }
   publicUser(user){
     if(!user)return null;
+    this.#normalizeUser(user);
     return {
       id:user.id, username:user.username, email:user.email, avatar:user.avatar,
       talents:user.talents, createdAt:user.createdAt, oath:user.oath,
@@ -55,7 +66,9 @@ export class UserRepository {
       passwordHash, avatar:String(username).trim().slice(0,1).toUpperCase()||'H', talents:2450,
       createdAt:now,
       oath:{version:OATH_VERSION,accepted:true,signedName:String(oathSignedName).trim(),acceptedAt:now},
-      bookmarks:[], predictions:[], comments:[], activity:[{id:crypto.randomUUID(),type:'account-created',createdAt:now}]
+      bookmarks:[], predictions:[], comments:[],
+      activity:[{id:crypto.randomUUID(),type:'account-created',createdAt:now}],
+      integrity:createIntegrityState()
     };
     this.users.push(user); await this.#save(); return user;
   }
@@ -63,10 +76,10 @@ export class UserRepository {
     await this.#ensure();
     const index=this.users.findIndex(u=>u.id===id);
     if(index<0)return null;
-    const user=this.users[index];
+    const user=this.#normalizeUser(this.users[index]);
     await mutator(user);
-    this.users[index]=user;
+    this.users[index]=this.#normalizeUser(user);
     await this.#save();
-    return user;
+    return this.users[index];
   }
 }
