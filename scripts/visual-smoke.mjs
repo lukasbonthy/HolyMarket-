@@ -37,6 +37,7 @@ if(Math.abs(first.width-318)>2)throw new Error(`first card width ${first.width}`
 if(Math.abs(second.x-first.x-330)>3)throw new Error(`column gap ${second.x-first.x}`);
 if(Math.abs(third.x-second.x-330)>3)throw new Error(`third column gap ${third.x-second.x}`);
 if(!(await cards.first().getAttribute('class'))?.includes('hm-premium-card'))throw new Error('Tailwind premium card utilities were not applied');
+if(!(await cards.first().getAttribute('class'))?.includes('hm-card-enter'))throw new Error('market card entrance motion missing');
 
 await ipad.page.locator('[data-action="open-auth"][data-mode="signup"]').click();
 await ipad.page.locator('input[name="username"]').fill('VisualTester');
@@ -47,6 +48,7 @@ await ipad.page.locator('input[name="oathSignedName"]').fill('Visual Tester');
 await ipad.page.locator('#auth-form').evaluate(form=>form.requestSubmit());
 await ipad.page.waitForSelector('.account-wrap',{timeout:8000});
 
+// Wrong-answer path: David wins is correct, so choosing index 1 must resolve as Not quite.
 await ipad.page.goto(`${base}/#/event/david-goliath`,{waitUntil:'networkidle'});
 await ipad.page.screenshot({path:`${out}/event-ipad-before.png`,fullPage:true});
 const main=await ipad.page.locator('.event-main').boundingBox();
@@ -58,14 +60,27 @@ const desktopTicket=ipad.page.locator('.ticket-side');
 await desktopTicket.locator('[data-action="ticket-outcome"][data-index="1"]').click();
 await desktopTicket.locator('[data-action="quick-add"][data-value="5"]').click();
 await desktopTicket.locator('[data-action="lock-prediction"]').click();
-await ipad.page.waitForTimeout(300);
+await ipad.page.waitForSelector('.answer-result.incorrect',{timeout:8000});
+if(!(await ipad.page.locator('.answer-result.incorrect').innerText()).includes('Not quite'))throw new Error('incorrect answer feedback missing');
+await ipad.page.screenshot({path:`${out}/event-wrong-animation.png`,fullPage:true});
 await ipad.page.locator('[data-action="bookmark"][data-market="david-goliath"]').first().click();
 await ipad.page.locator('[data-action="discussion"][data-tab="comments"]').first().click();
 await ipad.page.locator('#comment-input').fill('Honest visual smoke test.');
 await ipad.page.locator('[data-action="post-comment"]').click();
 await ipad.page.locator('.discussion-tabs [data-action="discussion"][data-tab="scripture"]').click();
-await ipad.page.waitForTimeout(600);
+await ipad.page.waitForSelector('.answer-result.incorrect');
 await ipad.page.screenshot({path:`${out}/event-ipad-after.png`,fullPage:true});
+
+// Correct-answer path: Red Sea index 0 is the resolving outcome and should celebrate once.
+await ipad.page.goto(`${base}/#/event/red-sea`,{waitUntil:'networkidle'});
+const redSeaTicket=ipad.page.locator('.ticket-side');
+await redSeaTicket.locator('[data-action="ticket-outcome"][data-index="0"]').click();
+await redSeaTicket.locator('[data-action="lock-prediction"]').click();
+await ipad.page.waitForSelector('.answer-result.correct',{timeout:8000});
+if(!(await ipad.page.locator('.answer-result.correct').innerText()).includes('Correct!'))throw new Error('correct answer feedback missing');
+await ipad.page.waitForSelector('.answer-celebration.correct',{timeout:2000});
+if(await ipad.page.locator('.celebration-particles i').count()<12)throw new Error('correct celebration particles missing');
+await ipad.page.screenshot({path:`${out}/event-correct-animation.png`,fullPage:true});
 
 await ipad.page.goto(`${base}/#/profile`,{waitUntil:'networkidle'});
 await ipad.page.screenshot({path:`${out}/profile-ipad.png`,fullPage:true});
