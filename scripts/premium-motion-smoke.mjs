@@ -60,8 +60,13 @@ if(!await tooltip.evaluate(el=>el.classList.contains('show'))){
     const target=document.elementFromPoint(x,y);
     const hit=document.querySelector('.hm-chart-hit-area');
     const hitBox=hit?.getBoundingClientRect();
+    const targetBox=target?.getBoundingClientRect();
     return {
       target:target?`${target.tagName}.${target.getAttribute('class')||''}`:'none',
+      targetHtml:target?.outerHTML?.slice(0,280)||'',
+      targetBox:targetBox?{x:targetBox.x,y:targetBox.y,width:targetBox.width,height:targetBox.height}:null,
+      targetInsideChart:Boolean(target?.closest?.('.event-chart')),
+      targetAncestors:target?Array.from(target.parentElement?.children||[]).slice(0,4).map(el=>`${el.tagName}.${el.className||''}`):[],
       fine:matchMedia('(pointer: fine)').matches,
       hitPointer:hit?getComputedStyle(hit).pointerEvents:'missing',
       hitBox:hitBox?{x:hitBox.x,y:hitBox.y,width:hitBox.width,height:hitBox.height}:null,
