@@ -4,6 +4,8 @@ import path from 'node:path';
 import { UserRepository } from './user-repository.mjs';
 import { verifyPassword } from './passwords.mjs';
 import { recordIntegrityEvent, publicIntegrity, adminIntegrity } from './anti-cheat.mjs';
+import { resolveOutcome } from './resolutions.mjs';
+import { applyStreakResult, streakAccuracy } from './streaks.mjs';
 import crypto from 'node:crypto';
 
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,7 +37,37 @@ export function createApp({
   const recordForUser=async(userId,event)=>users.updateUser(userId,user=>{recordIntegrityEvent(user.integrity,event)});
   const flagInvalid=async(user,marketId,reason)=>recordForUser(user.id,{type:'invalid-prediction',marketId:marketId||null,reason});
 
-  app.get('/api/status',(req,res)=>res.json({ok:true,provider:process.env.YVP_APP_KEY?'youversion':'web-fallback',auth:'express-session',integrity:'review-risk-v1'}));
+  app.get('/api/status',(req,res)=>res.json({ok:true,provider:process.env.YVP_APP_KEY?'youversion':'web-fallback',auth:'express-session',integrity:'review-risk-v1',leaderboard:'streak-v1'}));
+
+  app.get('/api/leaderboard',async(req,res,next)=>{
+    try{
+      const limit=Math.max(1,Math.min(100,Math.floor(Number(req.query.limit)||50)));
+      const all=await users.listUsers();
+      const rows=all.map(user=>{
+        const streak=user.streak||{};
+        return {
+          id:user.id,
+          username:user.username,
+          avatar:user.avatar,
+          currentStreak:Number(streak.current)||0,
+          bestStreak:Number(streak.best)||0,
+          correctAnswers:Number(streak.correct)||0,
+          resolvedAnswers:Number(streak.resolved)||0,
+          predictions:Array.isArray(user.predictions)?user.predictions.length:0,
+          accuracy:Math.round(streakAccuracy(streak)*1000)/10,
+          talents:Number(user.talents)||0
+        };
+      }).sort((a,b)=>
+        b.bestStreak-a.bestStreak||
+        b.currentStreak-a.currentStreak||
+        b.accuracy-a.accuracy||
+        b.resolvedAnswers-a.resolvedAnswers||
+        String(a.username).localeCompare(String(b.username))
+      ).slice(0,limit).map((row,index)=>({...row,rank:index+1}));
+      const top=rows[0]&&rows[0].bestStreak>0?{id:rows[0].id,username:rows[0].username,avatar:rows[0].avatar,streak:rows[0].bestStreak}:null;
+      res.json({leaders:rows,highestStreak:top});
+    }catch(err){next(err)}
+  });
 
   app.post('/api/auth/register',async(req,res,next)=>{
     try{
@@ -125,11 +157,13 @@ export function createApp({
       const recent=(Array.isArray(req.session.recentPredictions)?req.session.recentPredictions:[]).filter(ts=>nowMs-Number(ts)<10*60_000);
       recent.push(nowMs); req.session.recentPredictions=recent;
       if(req.session.marketOpenedAt)delete req.session.marketOpenedAt[marketId];
+      const correct=resolveOutcome(marketId,outcomeIndex);
 
       const updated=await users.updateUser(req.user.id,user=>{
         user.talents-=stake;
-        user.predictions.unshift({id:crypto.randomUUID(),marketId,outcomeIndex,side,stake,createdAt:now,latencyMs});
-        user.activity.unshift({id:crypto.randomUUID(),type:'prediction',marketId,stake,createdAt:now});
+        user.predictions.unshift({id:crypto.randomUUID(),marketId,outcomeIndex,side,stake,correct,createdAt:now,latencyMs});
+        user.streak=applyStreakResult(user.streak,correct,now);
+        user.activity.unshift({id:crypto.randomUUID(),type:'prediction',marketId,stake,correct,createdAt:now});
         if(latencyMs!==null)recordIntegrityEvent(user.integrity,{type:'prediction-latency',marketId,latencyMs,at:now});
         if(recent.length>=6)recordIntegrityEvent(user.integrity,{type:'rapid-burst',marketId,countInWindow:recent.length,at:now});
       });
