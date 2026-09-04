@@ -124,9 +124,10 @@ function bindChart(chart){
   const grid=svg.querySelector('.event-grid');
   svg.insertBefore(area,grid||primary);
 
+  const hitArea=svgEl('rect',{class:'hm-chart-hit-area',x:'20',y:'32',width:'528',height:'226',fill:'transparent','pointer-events':'all'});
   const crosshair=svgEl('line',{class:'hm-chart-crosshair',x1:'20',x2:'20',y1:'32',y2:'258'});
   const hoverDot=svgEl('circle',{class:'hm-chart-hover-dot',cx:'20',cy:'258',r:'5'});
-  svg.append(crosshair,hoverDot);
+  svg.append(hitArea,crosshair,hoverDot);
 
   const tooltip=document.createElement('div');
   tooltip.className='hm-chart-tooltip';
@@ -191,12 +192,12 @@ function bindChart(chart){
     hoverDot.classList.remove('show');
   };
 
-  svg.addEventListener('pointermove',event=>{
+  hitArea.addEventListener('pointermove',event=>{
     if(!finePointer.matches)return;
     updateHover(event);
   },{passive:true});
-  svg.addEventListener('pointerleave',clearHover,{passive:true});
-  svg.addEventListener('pointerdown',event=>{
+  hitArea.addEventListener('pointerleave',clearHover,{passive:true});
+  hitArea.addEventListener('pointerdown',event=>{
     if(finePointer.matches)return;
     updateHover(event);
     window.setTimeout(clearHover,1800);
