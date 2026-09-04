@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 const entry=await fs.readFile(new URL('../src/app-v9-entry.js',import.meta.url),'utf8');
-const css=await fs.readFile(new URL('../src/tailwind-v9.css',import.meta.url),'utf8');
-let motion='';
-try{motion=await fs.readFile(new URL('../src/premium-motion-v11.js',import.meta.url),'utf8')}catch{}
+const css=await fs.readFile(new URL('../src/premium-motion-v11.css',import.meta.url),'utf8');
+const motion=await fs.readFile(new URL('../src/premium-motion-v11.js',import.meta.url),'utf8');
+const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
-test('v11 premium motion module is loaded by the single entry point',()=>{
+test('v11 premium motion assets are loaded without replacing the v9 app',()=>{
   assert.match(entry,/premium-motion-v11\.js/);
+  assert.match(html,/premium-motion-v11\.css/);
 });
 
 test('v11 adds pointer reactive cards and premium click feedback',()=>{
