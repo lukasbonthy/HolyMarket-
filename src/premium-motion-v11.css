@@ -146,9 +146,143 @@ main.hm-v11-route-new { animation:hm-v11-route-new .3s cubic-bezier(.2,.8,.2,1) 
   animation:hm-v11-red-sweep .55s ease both;
 }
 
+/* V12 chart polish — preserves the measured chart box and event-page geometry. */
+@keyframes hm-v12-chart-enter {
+  from { opacity:.42; transform:translateY(4px); filter:blur(1px); }
+  to { opacity:1; transform:translateY(0); filter:blur(0); }
+}
+@keyframes hm-v12-line-draw {
+  from { stroke-dashoffset:var(--hm-chart-path-length); opacity:.18; }
+  35% { opacity:1; }
+  to { stroke-dashoffset:0; opacity:1; }
+}
+@keyframes hm-v12-area-rise {
+  from { opacity:0; transform:translateY(7px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@keyframes hm-v12-grid-soft {
+  from { opacity:0; }
+  to { opacity:.62; }
+}
+@keyframes hm-v12-endpoint-breathe {
+  0%,100% { transform:scale(1); opacity:.94; }
+  50% { transform:scale(1.22); opacity:1; }
+}
+@keyframes hm-v12-range-slide {
+  from { left:var(--hm-range-from-left); width:var(--hm-range-from-width); opacity:.7; }
+  to { left:var(--hm-range-left); width:var(--hm-range-width); opacity:1; }
+}
+
+.event-chart.hm-chart-v12 { isolation:isolate; }
+.event-chart.hm-chart-v12.hm-chart-enter,
+.event-chart.hm-chart-v12.hm-chart-range-in { animation:hm-v12-chart-enter .32s cubic-bezier(.2,.8,.2,1) both; }
+.event-chart.hm-chart-v12 svg { overflow:visible; }
+.event-chart.hm-chart-v12 .event-grid line {
+  opacity:.62;
+  stroke:#3a4650;
+  stroke-dasharray:2 7;
+  animation:hm-v12-grid-soft .42s ease both;
+}
+.event-chart.hm-chart-v12 .event-line {
+  stroke-dasharray:var(--hm-chart-path-length)!important;
+  stroke-dashoffset:var(--hm-chart-path-length);
+  animation:hm-v12-line-draw .72s cubic-bezier(.16,.74,.22,1) forwards!important;
+}
+.event-chart.hm-chart-v12 .event-line.primary {
+  stroke:#6bbcff;
+  stroke-width:2.55;
+  filter:drop-shadow(0 0 4px rgba(71,155,255,.28));
+}
+.event-chart.hm-chart-v12 .event-line.secondary {
+  stroke:#58626a;
+  stroke-width:1.35;
+  opacity:.56;
+  filter:none;
+  animation-duration:.58s!important;
+}
+.event-chart.hm-chart-v12 .hm-chart-area {
+  pointer-events:none;
+  transform-box:fill-box;
+  transform-origin:bottom;
+  animation:hm-v12-area-rise .55s .08s cubic-bezier(.2,.8,.2,1) both;
+}
+.event-chart.hm-chart-v12 .event-dot.primary {
+  filter:drop-shadow(0 0 8px rgba(98,179,255,.58));
+  animation:hm-v12-endpoint-breathe 2.6s 1s ease-in-out infinite;
+}
+.event-chart.hm-chart-v12 .event-dot.secondary { opacity:.58; }
+
+.event-chart.hm-chart-v12 .chart-range { overflow:visible; }
+.event-chart.hm-chart-v12 .chart-range button { position:relative; z-index:2; transition:color .18s ease; }
+.event-chart.hm-chart-v12 .chart-range button.active { background:transparent; color:#f4f7f9; }
+.hm-chart-range-indicator {
+  position:absolute;
+  top:2px;
+  bottom:2px;
+  left:var(--hm-range-left);
+  width:var(--hm-range-width);
+  z-index:1;
+  border-radius:5px;
+  background:linear-gradient(180deg,#323b42,#293137);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 4px 12px rgba(0,0,0,.14);
+  pointer-events:none;
+}
+.hm-chart-range-in .hm-chart-range-indicator { animation:hm-v12-range-slide .3s cubic-bezier(.2,.8,.2,1) both; }
+
+.hm-chart-crosshair {
+  stroke:rgba(145,184,214,.62);
+  stroke-width:1;
+  stroke-dasharray:3 5;
+  opacity:0;
+  transition:opacity .12s ease;
+  pointer-events:none;
+}
+.hm-chart-crosshair.show { opacity:.75; }
+.hm-chart-hover-dot {
+  fill:#15191d;
+  stroke:#7cc6ff;
+  stroke-width:2.3;
+  opacity:0;
+  filter:drop-shadow(0 0 7px rgba(98,179,255,.7));
+  transform-box:fill-box;
+  transform-origin:center;
+  transition:opacity .12s ease,transform .12s ease;
+  pointer-events:none;
+}
+.hm-chart-hover-dot.show { opacity:1; transform:scale(1.05); }
+.hm-chart-tooltip {
+  position:absolute;
+  z-index:8;
+  min-width:102px;
+  max-width:160px;
+  padding:7px 9px 8px;
+  border:1px solid rgba(89,105,117,.72);
+  border-radius:8px;
+  background:rgba(24,30,34,.94);
+  box-shadow:0 12px 32px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.025);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  opacity:0;
+  transform:translate(-50%,-100%) translateY(-9px) scale(.97);
+  transform-origin:bottom center;
+  transition:opacity .12s ease,transform .16s cubic-bezier(.2,.8,.2,1);
+  pointer-events:none;
+  color:#eef4f8;
+  letter-spacing:-.01em;
+}
+.hm-chart-tooltip.show { opacity:1; transform:translate(-50%,-100%) translateY(-10px) scale(1); }
+.hm-chart-tooltip strong { display:block; font-size:15px; line-height:1.05; font-variant-numeric:tabular-nums; }
+.hm-chart-tooltip span { display:block; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#8e9da8; font-size:9.5px; }
+.event-chart.hm-chart-v12 .event-axis span { transition:color .15s ease,opacity .15s ease; }
+.event-chart.hm-chart-v12:hover .event-axis span { color:#82939f; }
+.event-chart.hm-chart-v12 .event-label { transition:transform .18s ease,opacity .18s ease; }
+.event-chart.hm-chart-v12:hover .label-secondary { opacity:.62; }
+.event-chart.hm-chart-v12:hover .label-primary { transform:translateX(-2px); }
+
 @media (hover:none),(pointer:coarse) {
   .market-card.hm-card-tilt,.featured-panel.hm-card-tilt { transform:none!important; }
   .market-card::after,.featured-panel::after { display:none; }
+  .event-chart.hm-chart-v12 .hm-chart-tooltip { min-width:112px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -157,12 +291,17 @@ main.hm-v11-route-new { animation:hm-v11-route-new .3s cubic-bezier(.2,.8,.2,1) 
   .hm-scripture-reveal blockquote,.hm-scripture-reveal .passage-text,.hm-tab-shift,.hm-number-tick,
   .site-menu-popover,.filters-popover,.account-menu,.auth-modal,
   .answer-celebration.correct::before,.answer-celebration.correct .celebration-card>span,
-  .answer-celebration.incorrect .celebration-card::after {
+  .answer-celebration.incorrect .celebration-card::after,
+  .event-chart.hm-chart-v12,.event-chart.hm-chart-v12 .event-line,
+  .event-chart.hm-chart-v12 .hm-chart-area,.event-chart.hm-chart-v12 .event-grid line,
+  .event-chart.hm-chart-v12 .event-dot.primary,.hm-chart-range-indicator {
     animation:none!important;
     transition:none!important;
     transform:none!important;
     filter:none!important;
   }
+  .event-chart.hm-chart-v12 .event-line { stroke-dashoffset:0!important; }
   .market-card.hm-card-tilt,.featured-panel.hm-card-tilt { transform:none!important; }
   .market-card::after,.featured-panel::after { display:none!important; }
+  .hm-chart-tooltip,.hm-chart-crosshair,.hm-chart-hover-dot { transition:none!important; }
 }
