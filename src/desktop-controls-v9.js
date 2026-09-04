@@ -14,7 +14,7 @@ function controlToast(message){
   setTimeout(()=>el.remove(),2200);
 }
 
-function menuMarkup(){return`<div class="menu-section"><span class="menu-section-title">HolyMarket</span><div class="menu-grid"><a href="#/markets">Markets</a><a href="#/profile">Leaderboard</a><a href="#/profile">Rewards</a><a href="#/profile">Activity</a></div></div><div class="menu-section"><span class="menu-section-title">Support & learn</span><button data-menu-action="learn">Learn</button><button data-menu-action="help">Help</button><button data-menu-action="integrity">Market integrity</button></div><div class="menu-foot"><a href="#/markets">Terms</a><a href="#/markets">Privacy</a><a href="#/markets">Docs</a></div>`}
+function menuMarkup(){return`<div class="menu-section"><span class="menu-section-title">HolyMarket</span><div class="menu-grid"><a href="#/markets">Markets</a><a href="#/leaderboard">Leaderboard</a><a href="#/profile">Rewards</a><a href="#/profile">Activity</a></div></div><div class="menu-section"><span class="menu-section-title">Support & learn</span><button data-menu-action="learn">Learn</button><button data-menu-action="help">Help</button><button data-menu-action="integrity">Market integrity</button></div><div class="menu-foot"><a href="#/markets">Terms</a><a href="#/markets">Privacy</a><a href="#/markets">Docs</a></div>`}
 
 function ensureMenu(){
   let menu=document.querySelector('.site-menu-popover');
@@ -120,8 +120,6 @@ function activateHeaderTopic(topic){
     queueMicrotask(()=>document.querySelector(`[data-action="topic"][data-topic="${CSS.escape(directTopic)}"]`)?.click());
     return;
   }
-  // Categories like History/Torah/Prophets/Revelation are real market metadata
-  // even when they are not duplicated in the secondary topic pill rail.
   dispatchMarketSearch(topic==='Letters'?'Paul':topic);
 }
 
@@ -131,7 +129,6 @@ if(appRoot){
 queueMicrotask(hydrateControls);
 setTimeout(hydrateControls,0);
 
-// Polymarket-style desktop menu: hover opens, moving into the panel keeps it open, click also works.
 document.addEventListener('pointerover',e=>{
   const btn=e.target.closest?.('[data-action="site-menu"]');
   if(btn)showMenu(btn);
