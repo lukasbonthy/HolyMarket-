@@ -37,6 +37,33 @@ if(await bookmark.count()){
   if(!await bookmark.evaluate(el=>el.classList.contains('hm-bookmark-pop')))throw new Error('bookmark spring feedback missing');
 }
 
+await page.goto(`${base}/#/event/red-sea`,{waitUntil:'networkidle'});
+const chart=page.locator('.event-chart').first();
+await chart.waitFor({state:'visible'});
+if(!await chart.evaluate(el=>el.classList.contains('hm-chart-v12')))throw new Error('V12 chart enhancement class missing');
+if(!await chart.locator('svg defs #hm-chart-primary-gradient').count())throw new Error('chart gradient definition missing');
+if(!await chart.locator('.hm-chart-area').count())throw new Error('chart area fill missing');
+if(!await chart.locator('.hm-chart-crosshair').count())throw new Error('chart crosshair missing');
+if(!await chart.locator('.hm-chart-hover-dot').count())throw new Error('chart hover point missing');
+if(!await chart.locator('.hm-chart-tooltip').count())throw new Error('chart tooltip missing');
+
+const chartBox=await chart.boundingBox();
+if(!chartBox)throw new Error('event chart box missing');
+await page.mouse.move(chartBox.x+chartBox.width*.62,chartBox.y+chartBox.height*.56);
+await page.waitForTimeout(120);
+const tooltip=chart.locator('.hm-chart-tooltip');
+if(!await tooltip.evaluate(el=>el.classList.contains('show')))throw new Error('chart tooltip did not show on desktop hover');
+if(!/%/.test((await tooltip.textContent())||''))throw new Error('chart tooltip did not report probability');
+const crosshairOpacity=await chart.locator('.hm-chart-crosshair').evaluate(el=>getComputedStyle(el).opacity);
+if(Number(crosshairOpacity)<=0)throw new Error('chart crosshair remained hidden during hover');
+
+await page.locator('[data-action="chart-range"][data-range="1W"]').click();
+await page.waitForTimeout(140);
+const refreshed=page.locator('.event-chart').first();
+if(!await refreshed.evaluate(el=>el.classList.contains('hm-chart-v12')))throw new Error('V12 chart enhancement did not survive range rerender');
+if(!await refreshed.evaluate(el=>el.classList.contains('hm-chart-range-in')))throw new Error('range-change chart entrance animation missing');
+if((await refreshed.getAttribute('data-hm-chart-range'))!=='1W')throw new Error('range-change chart state not recorded');
+
 await page.screenshot({path:'visual-artifacts/premium-motion-desktop.png',fullPage:true});
 await ctx.close();
 
@@ -49,6 +76,13 @@ if(!reducedBox)throw new Error('reduced-motion market card missing');
 await reducedPage.mouse.move(reducedBox.x+reducedBox.width*.8,reducedBox.y+40);
 await reducedPage.waitForTimeout(80);
 if(await reducedCard.evaluate(el=>el.classList.contains('hm-card-tilt')))throw new Error('card tilt must stay disabled for reduced motion');
+
+await reducedPage.goto(`${base}/#/event/red-sea`,{waitUntil:'networkidle'});
+const reducedChart=reducedPage.locator('.event-chart').first();
+await reducedChart.waitFor({state:'visible'});
+if(!await reducedChart.evaluate(el=>el.classList.contains('hm-chart-v12')))throw new Error('reduced-motion chart enhancement missing');
+const reducedAnimation=await reducedChart.locator('.event-line.primary').evaluate(el=>getComputedStyle(el).animationName);
+if(reducedAnimation!=='none')throw new Error(`chart line animation must be disabled for reduced motion (${reducedAnimation})`);
 await reduced.close();
 
 await browser.close();
