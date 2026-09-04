@@ -2,7 +2,7 @@ name: HolyMarket tests
 
 on:
   push:
-    branches: [main, feature/express-session-auth, feature/anti-cheat-polymarket-v9, feature/answer-animations-v10]
+    branches: [main, feature/express-session-auth, feature/anti-cheat-polymarket-v9, feature/answer-animations-v10, feature/premium-motion-v11]
   pull_request:
     branches: [main]
 
