@@ -2,7 +2,7 @@ name: HolyMarket visual smoke
 
 on:
   push:
-    branches: [feature/anti-cheat-polymarket-v9, feature/answer-animations-v10, feature/premium-motion-v11, feature/chart-v12, main]
+    branches: [feature/anti-cheat-polymarket-v9, feature/answer-animations-v10, feature/premium-motion-v11, feature/chart-v12, feature/leaderboard-streak-font-v13, main]
 
 jobs:
   visual:
@@ -28,11 +28,12 @@ jobs:
           exit 1
       - run: node scripts/visual-smoke.mjs
       - run: node scripts/premium-motion-smoke.mjs
+      - run: node scripts/streak-leaderboard-smoke.mjs
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: holymarket-v12-visuals
+          name: holymarket-v13-visuals
           path: visual-artifacts/
           if-no-files-found: ignore
           retention-days: 7
