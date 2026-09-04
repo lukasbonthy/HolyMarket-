@@ -74,6 +74,7 @@ await ipad.page.screenshot({path:`${out}/event-ipad-after.png`,fullPage:true});
 // Correct-answer path: Red Sea index 0 is the resolving outcome and should celebrate once.
 await ipad.page.goto(`${base}/#/event/red-sea`,{waitUntil:'networkidle'});
 const redSeaTicket=ipad.page.locator('.ticket-side');
+await redSeaTicket.locator('[data-action="ticket-mode"][data-mode="predict"]').click();
 await redSeaTicket.locator('[data-action="ticket-outcome"][data-index="0"]').click();
 await redSeaTicket.locator('[data-action="lock-prediction"]').click();
 await ipad.page.waitForSelector('.answer-result.correct',{timeout:8000});
