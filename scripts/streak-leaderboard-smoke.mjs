@@ -56,8 +56,21 @@ if(!raisedText.includes('100%')&& !raisedText.includes('66.7%'))throw new Error(
 
 // A known wrong Abraham outcome resets current streak but must preserve best=2.
 await page.goto(`${base}/#/event/abraham`,{waitUntil:'networkidle'});
+const navDiag=await page.evaluate(()=>({
+  url:location.href,
+  hash:location.hash,
+  htmlClass:document.documentElement.className,
+  appDisplay:getComputedStyle(document.querySelector('#app')).display,
+  appText:(document.querySelector('#app')?.innerText||'').slice(0,180),
+  eventPages:document.querySelectorAll('.event-page').length,
+  ticketSides:document.querySelectorAll('.ticket-side').length,
+  activeLeaderboard:document.querySelectorAll('#leaderboard-v13-root.active').length,
+  leaderboardPages:document.querySelectorAll('.leaderboard-page').length
+}));
+console.log('ABRAHAM_NAV_DIAG',JSON.stringify(navDiag));
+await page.screenshot({path:`${out}/abraham-navigation-diag.png`,fullPage:true});
 const wrongTicket=page.locator('.ticket-side');
-await wrongTicket.locator('[data-action="ticket-outcome"][data-index="0"]').click();
+await wrongTicket.locator('[data-action="ticket-outcome"][data-index="0"]').click({timeout:5000});
 await wrongTicket.locator('[data-action="lock-prediction"]').click();
 await page.waitForSelector('.answer-result.incorrect',{timeout:8000});
 await page.waitForTimeout(1000);
