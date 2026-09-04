@@ -27,6 +27,7 @@ test('register requires oath and restores user through session',async()=>withSer
   const registered=await request(base,'/api/auth/register',{method:'POST',body:registration});
   assert.equal(registered.status,201);
   assert.equal(registered.data.user.oath.signedName,'Luke');
+  assert.deepEqual(registered.data.user.streak,{current:0,best:0,correct:0,resolved:0,updatedAt:null});
   assert.equal('passwordHash' in registered.data.user,false);
   const me=await request(base,'/api/auth/me',{cookie:registered.cookie});
   assert.equal(me.data.user.email,'luke@example.com');
@@ -35,12 +36,45 @@ test('register requires oath and restores user through session',async()=>withSer
 test('prediction, bookmark, comment and logout use authenticated state',async()=>withServer(async base=>{
   const registered=await request(base,'/api/auth/register',{method:'POST',body:registration});
   const cookie=registered.cookie;
-  const prediction=await request(base,'/api/me/predictions',{method:'POST',cookie,body:{marketId:'david-goliath',outcomeIndex:0,side:'yes',stake:25}});
+  const prediction=await request(base,'/api/me/predictions',{method:'POST',cookie,body:{marketId:'david-goliath',outcomeIndex:0,side:'yes',stake:25,correct:false,currentStreak:999}});
   assert.equal(prediction.status,201); assert.equal(prediction.data.user.talents,2425);
+  assert.equal(prediction.data.user.predictions[0].correct,true);
+  assert.equal(prediction.data.user.streak.current,1);
   const bookmark=await request(base,'/api/me/bookmarks/david-goliath',{method:'POST',cookie,body:{}});
   assert.equal(bookmark.data.bookmarked,true);
   const comment=await request(base,'/api/markets/david-goliath/comments',{method:'POST',cookie,body:{text:'My honest prediction.'}});
   assert.equal(comment.status,201); assert.equal(comment.data.comment.username,'Luke');
   const logout=await request(base,'/api/auth/logout',{method:'POST',cookie,body:{}}); assert.equal(logout.status,200);
   const me=await request(base,'/api/auth/me',{cookie}); assert.equal(me.data.user,null);
+}));
+
+test('correct predictions build streak and a wrong answer resets current only',async()=>withServer(async base=>{
+  const registered=await request(base,'/api/auth/register',{method:'POST',body:registration});
+  const cookie=registered.cookie;
+  let r=await request(base,'/api/me/predictions',{method:'POST',cookie,body:{marketId:'david-goliath',outcomeIndex:0,side:'yes',stake:1}});
+  assert.equal(r.data.user.streak.current,1);
+  r=await request(base,'/api/me/predictions',{method:'POST',cookie,body:{marketId:'red-sea',outcomeIndex:0,side:'yes',stake:1}});
+  assert.equal(r.data.user.streak.current,2); assert.equal(r.data.user.streak.best,2); assert.equal(r.data.user.streak.correct,2);
+  r=await request(base,'/api/me/predictions',{method:'POST',cookie,body:{marketId:'abraham',outcomeIndex:0,side:'yes',stake:1}});
+  assert.equal(r.data.user.predictions[0].correct,false);
+  assert.equal(r.data.user.streak.current,0); assert.equal(r.data.user.streak.best,2); assert.equal(r.data.user.streak.resolved,3);
+}));
+
+test('public leaderboard ranks best streak and excludes private auth data',async()=>withServer(async base=>{
+  const luke=await request(base,'/api/auth/register',{method:'POST',body:registration});
+  await request(base,'/api/me/predictions',{method:'POST',cookie:luke.cookie,body:{marketId:'david-goliath',outcomeIndex:0,side:'yes',stake:1}});
+  await request(base,'/api/me/predictions',{method:'POST',cookie:luke.cookie,body:{marketId:'red-sea',outcomeIndex:0,side:'yes',stake:1}});
+
+  const mary=await request(base,'/api/auth/register',{method:'POST',body:{...registration,username:'Mary',email:'mary@example.com',oathSignedName:'Mary'}});
+  await request(base,'/api/me/predictions',{method:'POST',cookie:mary.cookie,body:{marketId:'david-goliath',outcomeIndex:0,side:'yes',stake:1}});
+
+  const board=await request(base,'/api/leaderboard?limit=10');
+  assert.equal(board.status,200);
+  assert.equal(board.data.leaders[0].username,'Luke');
+  assert.equal(board.data.leaders[0].bestStreak,2);
+  assert.equal(board.data.highestStreak.username,'Luke');
+  assert.equal(board.data.highestStreak.streak,2);
+  assert.equal('email' in board.data.leaders[0],false);
+  assert.equal('oath' in board.data.leaders[0],false);
+  assert.equal('integrity' in board.data.leaders[0],false);
 }));
