@@ -2,7 +2,7 @@ name: HolyMarket visual smoke
 
 on:
   push:
-    branches: [feature/anti-cheat-polymarket-v9, main]
+    branches: [feature/anti-cheat-polymarket-v9, feature/answer-animations-v10, main]
 
 jobs:
   visual:
@@ -31,7 +31,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: holymarket-v9-visuals
+          name: holymarket-v10-visuals
           path: visual-artifacts/
           if-no-files-found: ignore
           retention-days: 7
