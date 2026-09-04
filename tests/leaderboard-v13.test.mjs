@@ -2,38 +2,39 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [html,app,css]=await Promise.all([
+const [html,entry,v13,css]=await Promise.all([
   fs.readFile('index.html','utf8'),
-  fs.readFile('src/app-v9.js','utf8'),
-  fs.readFile('src/styles-v9.css','utf8')
+  fs.readFile('src/app-v9-entry.js','utf8'),
+  fs.readFile('src/leaderboard-v13.js','utf8'),
+  fs.readFile('src/leaderboard-v13.css','utf8')
 ]);
 
 test('v13 loads Inter Tight with safe fallbacks',()=>{
   assert.match(html,/fonts\.googleapis\.com/);
   assert.match(html,/Inter\+Tight/);
+  assert.match(html,/leaderboard-v13\.css/);
   assert.match(css,/font-family:"Inter Tight",Inter/);
   assert.match(css,/font-variant-numeric:tabular-nums/);
 });
 
-test('v13 exposes a first-class leaderboard route and navigation',()=>{
-  assert.match(app,/h\.startsWith\('\/leaderboard'\)/);
-  assert.match(app,/function renderLeaderboard\(/);
-  assert.match(app,/#\/leaderboard/);
-  assert.match(app,/Leaderboard/);
-  assert.match(app,/\/api\/leaderboard/);
+test('v13 is loaded through the existing single frontend entry point',()=>{
+  assert.match(entry,/leaderboard-v13\.js/);
+  assert.match(v13,/#\/leaderboard/);
+  assert.match(v13,/renderLeaderboard/);
+  assert.match(v13,/\/api\/leaderboard/);
 });
 
-test('profile renders server streak stats and prediction result state',()=>{
-  assert.match(app,/Current streak/);
-  assert.match(app,/Best streak/);
-  assert.match(app,/Accuracy/);
-  assert.match(app,/prediction-result/);
+test('profile decoration renders trusted server streak stats and result state',()=>{
+  assert.match(v13,/Current streak/);
+  assert.match(v13,/Best streak/);
+  assert.match(v13,/Accuracy/);
+  assert.match(v13,/prediction-result/);
 });
 
 test('highest streak announcement uses requested copy and session dedupe',()=>{
-  assert.match(app,/has the highest streak of:/);
-  assert.match(app,/sessionStorage/);
-  assert.match(app,/streakAnnouncement/);
+  assert.match(v13,/has the highest streak of:/);
+  assert.match(v13,/sessionStorage/);
+  assert.match(v13,/streakAnnouncement/);
   assert.match(css,/\.streak-announcement/);
 });
 
