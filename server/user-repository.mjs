@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { hashPassword } from './passwords.mjs';
 import { createIntegrityState, normalizeIntegrity } from './anti-cheat.mjs';
+import { normalizeStreak } from './streaks.mjs';
 
 export const OATH_VERSION='2026-09-03-v1';
 
@@ -20,6 +21,7 @@ export class UserRepository {
     user.comments=Array.isArray(user.comments)?user.comments:[];
     user.activity=Array.isArray(user.activity)?user.activity:[];
     user.integrity=normalizeIntegrity(user.integrity||createIntegrityState());
+    user.streak=normalizeStreak(user.streak);
     return user;
   }
   async #ensure(){
@@ -49,7 +51,8 @@ export class UserRepository {
       id:user.id, username:user.username, email:user.email, avatar:user.avatar,
       talents:user.talents, createdAt:user.createdAt, oath:user.oath,
       bookmarks:[...(user.bookmarks||[])], predictions:[...(user.predictions||[])],
-      comments:[...(user.comments||[])], activity:[...(user.activity||[])]
+      comments:[...(user.comments||[])], activity:[...(user.activity||[])],
+      streak:{...user.streak}
     };
   }
   async listUsers(){await this.#ensure();return this.users;}
@@ -68,7 +71,8 @@ export class UserRepository {
       oath:{version:OATH_VERSION,accepted:true,signedName:String(oathSignedName).trim(),acceptedAt:now},
       bookmarks:[], predictions:[], comments:[],
       activity:[{id:crypto.randomUUID(),type:'account-created',createdAt:now}],
-      integrity:createIntegrityState()
+      integrity:createIntegrityState(),
+      streak:normalizeStreak()
     };
     this.users.push(user); await this.#save(); return user;
   }
