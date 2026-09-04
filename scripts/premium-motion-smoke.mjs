@@ -36,6 +36,13 @@ if(await bookmark.count()){
   await bookmark.evaluate(el=>el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})));
   if(!await bookmark.evaluate(el=>el.classList.contains('hm-bookmark-pop')))throw new Error('bookmark spring feedback missing');
 }
+// Anonymous bookmark clicks intentionally open auth. Close it before the chart-specific
+// assertions so the modal cannot sit above the event plot and steal pointer events.
+const authModal=page.locator('.auth-modal');
+if(await authModal.count()){
+  await page.locator('.modal-close[data-action="close-auth"]').click();
+  await authModal.waitFor({state:'detached'});
+}
 
 await page.goto(`${base}/#/event/red-sea`,{waitUntil:'networkidle'});
 const chart=page.locator('.event-chart').first();
@@ -43,38 +50,17 @@ await chart.waitFor({state:'visible'});
 await page.waitForFunction(()=>document.querySelector('.event-chart')?.classList.contains('hm-chart-v12'));
 if(!await chart.locator('svg defs #hm-chart-primary-gradient').count())throw new Error('chart gradient definition missing');
 if(!await chart.locator('.hm-chart-area').count())throw new Error('chart area fill missing');
+if(!await chart.locator('.hm-chart-hit-area').count())throw new Error('chart hit area missing');
 if(!await chart.locator('.hm-chart-crosshair').count())throw new Error('chart crosshair missing');
 if(!await chart.locator('.hm-chart-hover-dot').count())throw new Error('chart hover point missing');
 if(!await chart.locator('.hm-chart-tooltip').count())throw new Error('chart tooltip missing');
-if(!await chart.locator('.hm-chart-hit-area').count())throw new Error('chart hit area missing');
 
-const chartBox=await chart.boundingBox();
-if(!chartBox)throw new Error('event chart box missing');
-const hoverX=chartBox.x+chartBox.width*.62;
-const hoverY=chartBox.y+chartBox.height*.56;
-await page.mouse.move(hoverX,hoverY);
+const hitBox=await chart.locator('.hm-chart-hit-area').boundingBox();
+if(!hitBox)throw new Error('chart hit area box missing');
+await page.mouse.move(hitBox.x+hitBox.width*.62,hitBox.y+hitBox.height*.52);
 await page.waitForTimeout(120);
 const tooltip=chart.locator('.hm-chart-tooltip');
-if(!await tooltip.evaluate(el=>el.classList.contains('show'))){
-  const diag=await page.evaluate(({x,y})=>{
-    const target=document.elementFromPoint(x,y);
-    const hit=document.querySelector('.hm-chart-hit-area');
-    const hitBox=hit?.getBoundingClientRect();
-    const targetBox=target?.getBoundingClientRect();
-    return {
-      target:target?`${target.tagName}.${target.getAttribute('class')||''}`:'none',
-      targetHtml:target?.outerHTML?.slice(0,280)||'',
-      targetBox:targetBox?{x:targetBox.x,y:targetBox.y,width:targetBox.width,height:targetBox.height}:null,
-      targetInsideChart:Boolean(target?.closest?.('.event-chart')),
-      targetAncestors:target?Array.from(target.parentElement?.children||[]).slice(0,4).map(el=>`${el.tagName}.${el.className||''}`):[],
-      fine:matchMedia('(pointer: fine)').matches,
-      hitPointer:hit?getComputedStyle(hit).pointerEvents:'missing',
-      hitBox:hitBox?{x:hitBox.x,y:hitBox.y,width:hitBox.width,height:hitBox.height}:null,
-      x,y
-    };
-  },{x:hoverX,y:hoverY});
-  throw new Error(`chart tooltip did not show on desktop hover: ${JSON.stringify(diag)}`);
-}
+if(!await tooltip.evaluate(el=>el.classList.contains('show')))throw new Error('chart tooltip did not show on desktop hover');
 if(!/%/.test((await tooltip.textContent())||''))throw new Error('chart tooltip did not report probability');
 const crosshairOpacity=await chart.locator('.hm-chart-crosshair').evaluate(el=>getComputedStyle(el).opacity);
 if(Number(crosshairOpacity)<=0)throw new Error('chart crosshair remained hidden during hover');
