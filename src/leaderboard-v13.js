@@ -8,7 +8,7 @@ let streakAnnouncement=null;
 let announcementTimer=null;
 let decorateQueued=false;
 
-function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]||ch))}
+function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]||ch))}
 function isLeaderboardRoute(){return location.hash==='#/leaderboard'||location.hash.startsWith('#/leaderboard?')}
 function accuracy(value){const n=Math.max(0,Math.min(100,Number(value)||0));return `${Number.isInteger(n)?n:n.toFixed(1)}%`}
 function avatar(user,large=false){return`<span class="leader-avatar ${large?'large':''}">${esc(user?.avatar||user?.username?.[0]||'H')}</span>`}
@@ -121,11 +121,15 @@ function closeLeaderboard(){
 }
 
 function syncRoute(){
-  if(isLeaderboardRoute()){
+  const leaderboard=isLeaderboardRoute();
+  if(leaderboard){
     renderLeaderboard();
     if(!boardState.ready&&!boardState.loading)loadLeaderboard();
-    refreshCurrentUser().then(()=>{if(isLeaderboardRoute())renderLeaderboard()});
   }else closeLeaderboard();
+  refreshCurrentUser().then(()=>{
+    if(isLeaderboardRoute())renderLeaderboard();
+    else scheduleDecorate();
+  });
   scheduleDecorate();
 }
 
