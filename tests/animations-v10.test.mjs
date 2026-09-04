@@ -2,22 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const app=await fs.readFile(new URL('../src/app-v9.js',import.meta.url),'utf8');
+const entry=await fs.readFile(new URL('../src/app-v9-entry.js',import.meta.url),'utf8');
 const premium=await fs.readFile(new URL('../src/premium-v9.js',import.meta.url),'utf8');
 const tailwind=await fs.readFile(new URL('../src/tailwind-v9.css',import.meta.url),'utf8');
+let motion='';
+try{motion=await fs.readFile(new URL('../src/motion-v10.js',import.meta.url),'utf8')}catch{}
+
+test('V10 motion module is loaded through the single frontend entry point',()=>{
+  assert.match(entry,/motion-v10\.js/);
+});
 
 test('Scripture resolution exposes persistent correct/incorrect feedback',()=>{
-  assert.match(app,/correctAnswerIndex/);
-  assert.match(app,/answerFeedback/);
-  assert.match(app,/answer-result/);
-  assert.match(app,/Correct!/);
-  assert.match(app,/Not quite/);
+  assert.match(motion,/correctAnswerIndex/);
+  assert.match(motion,/answer-result/);
+  assert.match(motion,/Correct!/);
+  assert.match(motion,/Not quite/);
 });
 
 test('correct answer celebration and incorrect answer animation are rendered once',()=>{
-  assert.match(app,/answer-celebration/);
-  assert.match(app,/celebration-particles/);
-  assert.match(app,/clearCelebration/);
+  assert.match(motion,/answer-celebration/);
+  assert.match(motion,/celebration-particles/);
+  assert.match(motion,/clearCelebration/);
 });
 
 test('premium interaction layer animates routes, live updates, and cards',()=>{
