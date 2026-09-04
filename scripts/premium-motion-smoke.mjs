@@ -46,13 +46,30 @@ if(!await chart.locator('.hm-chart-area').count())throw new Error('chart area fi
 if(!await chart.locator('.hm-chart-crosshair').count())throw new Error('chart crosshair missing');
 if(!await chart.locator('.hm-chart-hover-dot').count())throw new Error('chart hover point missing');
 if(!await chart.locator('.hm-chart-tooltip').count())throw new Error('chart tooltip missing');
+if(!await chart.locator('.hm-chart-hit-area').count())throw new Error('chart hit area missing');
 
 const chartBox=await chart.boundingBox();
 if(!chartBox)throw new Error('event chart box missing');
-await page.mouse.move(chartBox.x+chartBox.width*.62,chartBox.y+chartBox.height*.56);
+const hoverX=chartBox.x+chartBox.width*.62;
+const hoverY=chartBox.y+chartBox.height*.56;
+await page.mouse.move(hoverX,hoverY);
 await page.waitForTimeout(120);
 const tooltip=chart.locator('.hm-chart-tooltip');
-if(!await tooltip.evaluate(el=>el.classList.contains('show')))throw new Error('chart tooltip did not show on desktop hover');
+if(!await tooltip.evaluate(el=>el.classList.contains('show'))){
+  const diag=await page.evaluate(({x,y})=>{
+    const target=document.elementFromPoint(x,y);
+    const hit=document.querySelector('.hm-chart-hit-area');
+    const hitBox=hit?.getBoundingClientRect();
+    return {
+      target:target?`${target.tagName}.${target.getAttribute('class')||''}`:'none',
+      fine:matchMedia('(pointer: fine)').matches,
+      hitPointer:hit?getComputedStyle(hit).pointerEvents:'missing',
+      hitBox:hitBox?{x:hitBox.x,y:hitBox.y,width:hitBox.width,height:hitBox.height}:null,
+      x,y
+    };
+  },{x:hoverX,y:hoverY});
+  throw new Error(`chart tooltip did not show on desktop hover: ${JSON.stringify(diag)}`);
+}
 if(!/%/.test((await tooltip.textContent())||''))throw new Error('chart tooltip did not report probability');
 const crosshairOpacity=await chart.locator('.hm-chart-crosshair').evaluate(el=>getComputedStyle(el).opacity);
 if(Number(crosshairOpacity)<=0)throw new Error('chart crosshair remained hidden during hover');
