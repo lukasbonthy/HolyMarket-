@@ -27,6 +27,7 @@ jobs:
           cat /tmp/holymarket.log
           exit 1
       - run: node scripts/visual-smoke.mjs
+      - run: node scripts/premium-motion-smoke.mjs
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
