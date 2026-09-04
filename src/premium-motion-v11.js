@@ -4,6 +4,7 @@ const finePointer=window.matchMedia('(pointer: fine)');
 const boundCards=new WeakSet();
 const lastNumberText=new WeakMap();
 let queued=false;
+let pendingBookmarkMarket='';
 
 function motionAllowed(){return !reduceMotion.matches}
 
@@ -74,12 +75,22 @@ function decorateNumbers(){
   });
 }
 
+function decoratePendingBookmark(){
+  if(!pendingBookmarkMarket)return;
+  const selector=`[data-action="bookmark"][data-market="${CSS.escape(pendingBookmarkMarket)}"]`;
+  const current=document.querySelector(selector);
+  if(!current)return;
+  restartClass(current,'hm-bookmark-pop');
+  pendingBookmarkMarket='';
+}
+
 function decorate(){
   decorateCards();
   decorateScripture();
   decorateFeatured();
   decorateActiveTabs();
   decorateNumbers();
+  decoratePendingBookmark();
 }
 
 function schedule(){
@@ -102,7 +113,9 @@ document.addEventListener('pointerdown',event=>pressWave(event.target,event),{pa
 
 document.addEventListener('click',event=>{
   const bookmark=event.target.closest('[data-action="bookmark"],.card-bookmark');
-  if(bookmark)restartClass(bookmark,'hm-bookmark-pop');
+  if(!bookmark)return;
+  pendingBookmarkMarket=bookmark.dataset.market||'';
+  restartClass(bookmark,'hm-bookmark-pop');
 },true);
 
 document.addEventListener('focusin',event=>{
